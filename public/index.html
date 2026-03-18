@@ -325,12 +325,22 @@
         font-size: 0.8rem;
         text-align: center;
       }
+
+      footer a {
+        color: var(--text-muted);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      footer a:hover {
+        color: var(--text);
+      }
     </style>
   </head>
   <body>
     <header>
       <h1>Gimme <span>More</span></h1>
-      <p>Find your global equivalents through deep profile matching</p>
+      <p>Curated recommendations from your nerdy, traveling bestie.</p>
     </header>
 
     <div class="search-card">
@@ -361,7 +371,7 @@
       <div class="results-content" id="results-content"></div>
     </div>
 
-    <footer>Powered by Claude</footer>
+    <footer>maed with ❤️ by <a href="https://maeganburke.com" target="_blank" rel="noopener noreferrer">Maegan Tomela Burke</a></footer>
 
     <script>
       const form = document.getElementById("search-form");
