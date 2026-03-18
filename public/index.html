@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gimme More</title>
+    <style>
+      *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      :root {
+        --bg: #0d0d0d;
+        --surface: #161616;
+        --border: #2a2a2a;
+        --text: #e8e8e8;
+        --text-muted: #888;
+        --accent: #ff4d00;
+        --accent-dim: rgba(255, 77, 0, 0.12);
+        --radius: 8px;
+        --font: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 48px 24px 80px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 48px;
+      }
+
+      header h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: var(--text);
+        line-height: 1;
+      }
+
+      header h1 span {
+        color: var(--accent);
+      }
+
+      header p {
+        margin-top: 12px;
+        color: var(--text-muted);
+        font-size: 0.95rem;
+        letter-spacing: 0.01em;
+      }
+
+      .search-card {
+        width: 100%;
+        max-width: 640px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 24px;
+      }
+
+      .input-row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .category-select {
+        flex-shrink: 0;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 0.9rem;
+        padding: 0 14px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        padding-right: 32px;
+        min-width: 90px;
+        height: 48px;
+        transition: border-color 0.15s;
+      }
+
+      .category-select:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .text-input {
+        flex: 1;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 1rem;
+        padding: 0 16px;
+        border-radius: var(--radius);
+        height: 48px;
+        transition: border-color 0.15s;
+      }
+
+      .text-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .text-input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+
+      .submit-btn {
+        flex-shrink: 0;
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        font-family: var(--font);
+        font-size: 0.9rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        padding: 0 22px;
+        height: 48px;
+        border-radius: var(--radius);
+        cursor: pointer;
+        transition: opacity 0.15s, transform 0.1s;
+        white-space: nowrap;
+      }
+
+      .submit-btn:hover:not(:disabled) {
+        opacity: 0.9;
+      }
+
+      .submit-btn:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .results-area {
+        width: 100%;
+        max-width: 640px;
+        margin-top: 32px;
+      }
+
+      .results-content {
+        display: none;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 28px;
+        line-height: 1.75;
+        font-size: 0.95rem;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .results-content.visible {
+        display: block;
+      }
+
+      .results-content.error {
+        color: #ff6b6b;
+        border-color: rgba(255, 107, 107, 0.25);
+      }
+
+      .cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: var(--accent);
+        margin-left: 2px;
+        vertical-align: text-bottom;
+        animation: blink 0.8s step-end infinite;
+      }
+
+      .cursor.hidden {
+        display: none;
+      }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+
+      .loading-bar {
+        height: 2px;
+        background: var(--accent-dim);
+        border-radius: 1px;
+        margin-top: 16px;
+        overflow: hidden;
+        display: none;
+      }
+
+      .loading-bar.visible {
+        display: block;
+      }
+
+      .loading-bar-fill {
+        height: 100%;
+        background: var(--accent);
+        width: 0%;
+        animation: loading 1.8s ease-in-out infinite;
+      }
+
+      @keyframes loading {
+        0% { width: 0%; margin-left: 0%; }
+        50% { width: 60%; margin-left: 20%; }
+        100% { width: 0%; margin-left: 100%; }
+      }
+
+      footer {
+        margin-top: 64px;
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Gimme <span>More</span></h1>
+      <p>Find your global equivalents through deep profile matching</p>
+    </header>
+
+    <div class="search-card">
+      <form id="search-form">
+        <div class="input-row">
+          <select class="category-select" id="category" name="category">
+            <option value="City">City</option>
+          </select>
+          <input
+            type="text"
+            class="text-input"
+            id="query-input"
+            placeholder="e.g. Austin, TX"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="submit" class="submit-btn" id="submit-btn">
+            Find matches
+          </button>
+        </div>
+      </form>
+      <div class="loading-bar" id="loading-bar">
+        <div class="loading-bar-fill"></div>
+      </div>
+    </div>
+
+    <div class="results-area">
+      <div class="results-content" id="results-content">
+        <span id="results-text"></span><span class="cursor hidden" id="cursor"></span>
+      </div>
+    </div>
+
+    <footer>Powered by Claude</footer>
+
+    <script>
+      const form = document.getElementById("search-form");
+      const input = document.getElementById("query-input");
+      const categorySelect = document.getElementById("category");
+      const submitBtn = document.getElementById("submit-btn");
+      const loadingBar = document.getElementById("loading-bar");
+      const resultsContent = document.getElementById("results-content");
+      const resultsText = document.getElementById("results-text");
+      const cursor = document.getElementById("cursor");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const query = input.value.trim();
+        if (!query) return;
+
+        const category = categorySelect.value;
+
+        submitBtn.disabled = true;
+        loadingBar.classList.add("visible");
+        resultsContent.classList.remove("error");
+        resultsContent.classList.add("visible");
+        resultsText.textContent = "";
+        cursor.classList.remove("hidden");
+
+        try {
+          const response = await fetch("/api/recommend", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ input: query, category }),
+          });
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n\n");
+            buffer = lines.pop();
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const payload = JSON.parse(line.slice(6));
+
+              if (payload.error) {
+                resultsText.textContent = payload.error;
+                resultsContent.classList.add("error");
+                break;
+              }
+
+              if (payload.done) break;
+
+              if (payload.text) {
+                resultsText.textContent += payload.text;
+              }
+            }
+          }
+        } catch (err) {
+          resultsText.textContent = "Connection error. Please try again.";
+          resultsContent.classList.add("error");
+        } finally {
+          cursor.classList.add("hidden");
+          loadingBar.classList.remove("visible");
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
