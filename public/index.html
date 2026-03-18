@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gimme More</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked@13/marked.min.js"></script>
     <style>
       *, *::before, *::after {
         box-sizing: border-box;
@@ -162,9 +163,7 @@
         border: 1px solid var(--border);
         border-radius: var(--radius);
         padding: 28px;
-        line-height: 1.75;
         font-size: 0.95rem;
-        white-space: pre-wrap;
         word-break: break-word;
       }
 
@@ -177,7 +176,69 @@
         border-color: rgba(255, 107, 107, 0.25);
       }
 
-      .cursor {
+      /* Markdown element styles */
+      .results-content h1,
+      .results-content h2,
+      .results-content h3 {
+        color: var(--text);
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 1.4em 0 0.5em;
+        line-height: 1.3;
+      }
+
+      .results-content h1 { font-size: 1.35rem; }
+      .results-content h2 { font-size: 1.15rem; }
+      .results-content h3 { font-size: 1rem; color: var(--accent); }
+
+      .results-content h1:first-child,
+      .results-content h2:first-child,
+      .results-content h3:first-child { margin-top: 0; }
+
+      .results-content p {
+        line-height: 1.75;
+        margin: 0.65em 0;
+        color: var(--text);
+      }
+
+      .results-content strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .results-content em {
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      .results-content ul,
+      .results-content ol {
+        padding-left: 1.4em;
+        margin: 0.65em 0;
+      }
+
+      .results-content li {
+        line-height: 1.75;
+        margin: 0.25em 0;
+        color: var(--text);
+      }
+
+      .results-content hr {
+        border: none;
+        border-top: 1px solid var(--border);
+        margin: 1.25em 0;
+      }
+
+      .results-content code {
+        font-family: "JetBrains Mono", "Fira Code", monospace;
+        font-size: 0.85em;
+        background: rgba(255,255,255,0.06);
+        padding: 0.15em 0.4em;
+        border-radius: 4px;
+        color: var(--text);
+      }
+
+      .cursor-blink {
         display: inline-block;
         width: 2px;
         height: 1em;
@@ -185,10 +246,6 @@
         margin-left: 2px;
         vertical-align: text-bottom;
         animation: blink 0.8s step-end infinite;
-      }
-
-      .cursor.hidden {
-        display: none;
       }
 
       @keyframes blink {
@@ -261,9 +318,7 @@
     </div>
 
     <div class="results-area">
-      <div class="results-content" id="results-content">
-        <span id="results-text"></span><span class="cursor hidden" id="cursor"></span>
-      </div>
+      <div class="results-content" id="results-content"></div>
     </div>
 
     <footer>Powered by Claude</footer>
@@ -275,8 +330,19 @@
       const submitBtn = document.getElementById("submit-btn");
       const loadingBar = document.getElementById("loading-bar");
       const resultsContent = document.getElementById("results-content");
-      const resultsText = document.getElementById("results-text");
-      const cursor = document.getElementById("cursor");
+
+      marked.setOptions({ breaks: true });
+
+      function renderMarkdown(text, streaming) {
+        resultsContent.innerHTML = marked.parse(text);
+        if (streaming) {
+          const cur = document.createElement("span");
+          cur.className = "cursor-blink";
+          // Append cursor to the last element, or directly if none
+          const last = resultsContent.lastElementChild;
+          (last || resultsContent).appendChild(cur);
+        }
+      }
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -290,8 +356,9 @@
         loadingBar.classList.add("visible");
         resultsContent.classList.remove("error");
         resultsContent.classList.add("visible");
-        resultsText.textContent = "";
-        cursor.classList.remove("hidden");
+        resultsContent.innerHTML = '<span class="cursor-blink"></span>';
+
+        let rawText = "";
 
         try {
           const response = await fetch("/api/recommend", {
@@ -317,23 +384,25 @@
               const payload = JSON.parse(line.slice(6));
 
               if (payload.error) {
-                resultsText.textContent = payload.error;
                 resultsContent.classList.add("error");
+                resultsContent.textContent = payload.error;
                 break;
               }
 
               if (payload.done) break;
 
               if (payload.text) {
-                resultsText.textContent += payload.text;
+                rawText += payload.text;
+                renderMarkdown(rawText, true);
               }
             }
           }
         } catch (err) {
-          resultsText.textContent = "Connection error. Please try again.";
           resultsContent.classList.add("error");
+          resultsContent.textContent = "Connection error. Please try again.";
         } finally {
-          cursor.classList.add("hidden");
+          // Final render without cursor
+          if (rawText) renderMarkdown(rawText, false);
           loadingBar.classList.remove("visible");
           submitBtn.disabled = false;
         }
